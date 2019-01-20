@@ -1,12 +1,12 @@
 var express = require('express'),
-    handlebars = require('express-handlebars').create({ defaultLayout: 'main'});
-var mongoose=require('mongoose');
+    handlebars = require('express-handlebars').create({defaultLayout: 'main'});
+var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost:27017/d45');
 
 var app = express();
-var credentials=require('./credentials.js');
+var credentials = require('./credentials.js');
 var product = require('./models/product.js');
-var cookieSession=require('cookie-session');
+var cookieSession = require('cookie-session');
 var rateLimit = require('express-rate-limit');
 var createFetchLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 min window
@@ -17,22 +17,21 @@ var createFetchLimiter = rateLimit({
 // setting up rate limit for potential brute force attacks
 app.use(createFetchLimiter);
 var handlebars = require('express-handlebars').create({
-    defaultLayout:'main',
+    defaultLayout: 'main',
     helpers: {
-        debug: function(){
+        debug: function () {
             console.log("Current Context");
             console.log("=================");
             console.log(this);
             return null
         },
-        section: function(name, options){
-            if(!this._sections) this._sections = {};
+        section: function (name, options) {
+            if (!this._sections) this._sections = {};
             this._sections[name] = options.fn(this);
             return null;
         }
     }
 });
-
 
 
 app.engine('handlebars', handlebars.engine);
@@ -41,31 +40,28 @@ app.set('view engine', 'handlebars');
 app.set('port', process.env.PORT || 3017);
 app.use(require('body-parser').urlencoded({extended: true}));
 app.use(require('body-parser').json());
-app.set('trust proxy',1)
+app.set('trust proxy', 1)
 app.use(
     cookieSession({
-        secret:'keyboard cat',
-        name:'session',
-        keys:['key1','key2'],
-        cookie:{secure:false}
+        secret: 'keyboard cat',
+        name: 'session',
+        keys: ['key1', 'key2'],
+        cookie: {secure: false}
 
     }))
 
 app.use(require('cookie-parser')(credentials.cookieSecret));
 
-app.use(express.static(__dirname+'/public'));
-
-
-
-
+app.use(express.static(__dirname + '/public'));
 
 /**
- * Delete all the sample products created for testing
+ * Delete all the custom products , except the default products created on start
+ automatically for testing
  */
 
-app.get('/deletesampleproducts' , function(req,res) {
-    product.remove({},function(err,products) {
-        if(!err)
+app.get('/deletecustomproducts', function (req, res) {
+    product.remove({}, function (err, products) {
+        if (!err)
             res.render('deleteproducts');
     })
 
@@ -77,39 +73,37 @@ app.get('/deletesampleproducts' , function(req,res) {
  *
  */
 
-app.get('/createcustomproducts' ,function(req,res) {
+app.get('/createcustomproducts', function (req, res) {
     res.render('createproducts');
 })
 
-app.get('/debugtest' , function(req,res) {
+app.get('/debugtest', function (req, res) {
     var products = [
-        { title: 'test-product-1' , price:20 , inventory_count:10 },
-        { title: 'test-product-2' , price:10 , inventory_count:20 },
+        {title: 'test-product-1', price: 20, inventory_count: 10},
+        {title: 'test-product-2', price: 10, inventory_count: 20},
     ];
 
-    products.forEach(function(n,i) {
+    products.forEach(function (n, i) {
 
-        product.findOneAndUpdate( n, n, { upsert: true }, function(err,doc) {
-            console.log( doc );
+        product.findOneAndUpdate(n, n, {upsert: true}, function (err, doc) {
+            console.log(doc);
         });
-        if(i== array.length-1)
+        if (i == array.length - 1)
             productsCreated();
     })
+
     function productsCreated() {
         res.send("Completed");
     }
 })
 
+app.post('/createProduct', function (req, res) {
 
+    product.find({title: req.body.title}, function (err, prod) {
 
+    }).then(function (resProduct) {
 
-app.post('/createProduct',function(req,res) {
-
-    product.find({title:req.body.title} , function(err,prod) {
-
-    }).then(function(resProduct) {
-
-        if(resProduct.length <= 0) {
+        if (resProduct.length <= 0) {
             newproduct = product({
                 title: req.body.title,
                 price: req.body.price,
@@ -118,8 +112,7 @@ app.post('/createProduct',function(req,res) {
             newproduct.save();
             res.redirect('/fetchproducts');
         }
-        else
-        {
+        else {
             res.render('incorrectproduct');
         }
     })
@@ -131,30 +124,28 @@ app.post('/createProduct',function(req,res) {
  *
  */
 
-
-app.get('/createsampleproducts',function(req,res) {
+app.get('/createsampleproducts', function (req, res) {
 
     var products = [
-        { title: 'test-product-1' , price:20 , inventory_count:10 },
-        { title: 'test-product-2' , price:10 , inventory_count:20 },
+        {title: 'test-product-1', price: 20, inventory_count: 10},
+        {title: 'test-product-2', price: 10, inventory_count: 20},
     ];
 
-    products.forEach(function(n,i) {
+    products.forEach(function (n, i) {
 
-        product.findOneAndUpdate( n, n, { upsert: true }, function(err,doc) {
-            console.log( doc );
+        product.findOneAndUpdate(n, n, {upsert: true}, function (err, doc) {
+            console.log(doc);
         });
-        if(i== products.length-1)
+        if (i == products.length - 1)
             productsCreated();
     })
+
     function productsCreated() {
-      res.redirect(303,'/fetchproducts');
+        res.redirect(303, '/fetchproducts');
     }
 
 
-
 })
-
 
 /**
  * Get the products with available inventory
@@ -164,8 +155,8 @@ app.get('/createsampleproducts',function(req,res) {
  * having inventory
  *
  */
-app.get('/fetchproducts/:check' , function(req,res) {
-    if(req.params.check === 'available') {
+app.get('/fetchproducts/:check', function (req, res) {
+    if (req.params.check === 'available') {
         product.find({inventory_count: {$gt: 0}}, function (err, products) {
             res.render("displayProducts", {productsForDisplay: products});
         })
@@ -181,15 +172,13 @@ app.get('/fetchproducts/:check' , function(req,res) {
  *
  */
 
-app.get('/fetchproducts' ,function(req,res) {
-    product.find({},function(err,prod) {
-        res.render('displayProducts',{productsForDisplay:prod})
+app.get('/fetchproducts', function (req, res) {
+    product.find({}, function (err, prod) {
+        res.render('displayProducts', {productsForDisplay: prod})
     })
 
 
 })
-
-
 
 
 /**
@@ -199,101 +188,72 @@ app.get('/fetchproducts' ,function(req,res) {
  * Update the quantity of product along with the price of product.
  */
 
-app.post('/updatecart' ,function(req,res) {
+app.post('/updatecart', function (req, res) {
     var testCheck = false;
     var counter = 0;
     var testInvt = 0;
     var cartinf = req.session.cart;
     var ar = [];
-    cartinf.items.forEach(function (cartitem,count) {
+    cartinf.items.forEach(function (cartitem, count) {
 
-            function contentcart() {
-                res.redirect(303,'/cart');
+        function contentcart() {
+            res.redirect(303, '/cart');
+        }
+
+        var difference = req.body[cartitem.title] - cartitem.quantity;
+        quant = cartitem.quantity;
+        var cartstoreitem = {
+            title: cartitem.title,
+            quantity: quant
+        }
+        ar.push(cartstoreitem);
+        cartitem.quantity = parseInt(req.body[cartitem.title]);
+        product.find({title: cartitem.title}, function (err, r) {
+            return r
+        }).then(function (r) {
+            if (req.body[cartitem.title] > r[0].inventory_count) {
+                req.session.cart.inventory_available = false;
+                testInvt++;
+            }
+            if (req.body[cartitem.title] == 0) {
+                var updQuantity;
+                for (var i = 0; i < ar.length; i++) {
+                    if (cartitem.title == ar[i].title)
+                        updQuantity = ar[i].quantity;
+
+                }
+                cartinf.total_price -= updQuantity * cartitem.price;
+                cartinf.items.splice(count - counter, 1);
+                counter++;
+                testCheck = true;
+
+
+            }
+            else if (difference < 0) {
+                cartinf.total_price -= (-difference) * cartitem.price;
+                cartinf.total_price = Math.round(cartinf.total_price * 100) / 100;
+            }
+            else if (difference > 0) {
+                cartinf.total_price += (difference) * cartitem.price;
+                cartinf.total_price = Math.round(cartinf.total_price * 100) / 100;
+
             }
 
-            var difference = req.body[cartitem.title] - cartitem.quantity;
-            console.log('just a test' + difference);
-            quant = cartitem.quantity;
-            var cartstoreitem = {
-                title:cartitem.title,
-                quantity:quant
+            if (cartinf.items.length == 0)
+                res.render('emptycart');
+
+            else {
+                if ((count === cartinf.items.length - 1 && !testCheck) || (testCheck && count === cartinf.items.length - 1 + counter)) {
+                    if (testInvt === 0)
+                        req.session.cart.inventory_available = true;
+                    contentcart();
+
+                }
+
+
             }
-            ar.push(cartstoreitem);
-            console.log('test' , ar);
-            console.log(quant + "This is imp");
-            cartitem.quantity = parseInt(req.body[cartitem.title]);
-            product.find({title: cartitem.title}, function (err, r) {
-                return r
-            }).then(function (r) {
-                console.log("please check" + count);
-                if(req.body[cartitem.title] > r[0].inventory_count) {
-                    req.session.cart.inventory_available = false;
-                    testInvt++;
-                }
-                console.log("Check cart" + req.body[cartitem.title]);
-                if(req.body[cartitem.title] == 0)
-
-                {
-                    var updQuantity;
-                    console.log('titlecheck' + cartitem.title);
-                   for(var i=0 ; i<ar.length ; i++)
-                   {
-                       if(cartitem.title==ar[i].title)
-                           updQuantity = ar[i].quantity;
-
-                   }
-
-                    cartinf.total_price-=updQuantity*cartitem.price;
-                    console.log(updQuantity);
-                    console.log(cartitem.price);
-                    console.log("Check" + cartinf.total_price);
-                    cartinf.items.splice(count-counter,1);
-                    counter++;
-                    testCheck=true;
-
-
-                }
-
-
-               else if (difference < 0) {
-                    console.log("check1");
-                    cartinf.total_price -= (-difference) * cartitem.price;
-                    cartinf.total_price= Math.round(cartinf.total_price*100)/100;
-                    console.log(cartinf.total_price + "debug1");
-                }
-                else if(difference>0){
-                    console.log("check2");
-                    cartinf.total_price += (difference) * cartitem.price;
-                    cartinf.total_price= Math.round(cartinf.total_price*100)/100;
-                    console.log(cartinf.total_price + "debug2");
-                }
-
-                console.log(cartinf.items);
-                console.log(testCheck);
-                console.log(count);
-
-                if(cartinf.items.length == 0)
-                    res.render('emptycart');
-
-                else {
-                    if ((count === cartinf.items.length - 1 && !testCheck) || (testCheck && count === cartinf.items.length - 1 + counter)) {
-                        console.log("counting" + count);
-                        if (testInvt === 0)
-                            req.session.cart.inventory_available = true;
-                        console.log("Checking if working or not");
-                        contentcart();
-
-                    }
-
-
-                }
-            })
-
-
-
+        })
     })
-
-
 })
 
 /**
@@ -302,9 +262,9 @@ app.post('/updatecart' ,function(req,res) {
  */
 
 
-app.get('/cart/clear' , function(req,res) {
-   req.session.cart = null;
-   res.render('emptycart');
+app.get('/cart/clear', function (req, res) {
+    req.session.cart = null;
+    res.render('emptycart');
 })
 
 
@@ -314,50 +274,50 @@ app.get('/cart/clear' , function(req,res) {
  * Checkout button is visible if products are in stock
  */
 
-app.get('/cart' ,function(req,res) {
-   if(req.session.cart != undefined) {
-       var checkingavailability=true;
-       var cart_items = req.session.cart.items;
-       cart_items.forEach(function(item,i) {
-           product.find({title: item.title}, function (err, prod) {
-               if (prod[0].inventory_count < item.quantity) {
-                   /*
-                   if quantity entered by user is more than the
-                   available inventory set the checkavailability
-                   false
-                    */
-                   checkingavailability = false;
-                   req.session.cart.inventory_available = false;
-                   navigateCart();
-               }
+app.get('/cart', function (req, res) {
+        if (req.session.cart != undefined) {
+            var checkingavailability = true;
+            var cart_items = req.session.cart.items;
+            cart_items.forEach(function (item, i) {
+                product.find({title: item.title}, function (err, prod) {
+                    if (prod[0].inventory_count < item.quantity) {
+                        /*
+                        if quantity entered by user is more than the
+                        available inventory set the checkavailability
+                        false
+                         */
+                        checkingavailability = false;
+                        req.session.cart.inventory_available = false;
+                        navigateCart();
+                    }
 
-              if(cart_items.length-1 == i && checkingavailability)
-                  navigateCart();
+                    if (cart_items.length - 1 == i && checkingavailability)
+                        navigateCart();
 
-           })
+                })
 
-       })
+            })
 
-       function navigateCart() {
-           res.render('cart', {
-               cartitems: req.session.cart.items,
-               total_price: req.session.cart.total_price,
-               checkout: checkingavailability
-           });
-       }
+            function navigateCart() {
+                res.render('cart', {
+                    cartitems: req.session.cart.items,
+                    total_price: req.session.cart.total_price,
+                    checkout: checkingavailability
+                });
+            }
 
 
-   }
-   else {
-       /*
-       Message is displayed if navigated to cart with
-       no products
-        */
-       res.send("Your shopping Cart is Empty "+'<a href="/fetchproducts">'+ "Click here to choose product" +  '</a>');
-   }
+        }
+        else {
+            /*
+            Message is displayed if navigated to cart with
+            no products
+             */
+            res.send("Your shopping Cart is Empty " + '<a href="/fetchproducts">' + "Click here to choose product" + '</a>')
+        }
 
     }
-    )
+)
 
 /**
  *  Add the Product with specified id to the cart
@@ -367,17 +327,17 @@ app.get('/cart' ,function(req,res) {
  *  If cart session is empty , create cart session by adding the product with id
  */
 
-app.get('/cart/add/:id',function(req,res) {
+app.get('/cart/add/:id', function (req, res) {
     var title = "";
-    var price="";
-    product.find({_id:req.params.id},function(err,prod) {
-        if(err)
-           res.send('Invalid Id of Product Sent')
+    var price = "";
+    product.find({_id: req.params.id}, function (err, prod) {
+        if (err)
+            res.send('Invalid Id of Product Sent')
         return prod;
 
-    }).then(function(re) {
-        // if cart session undefined create new session
-            if(req.session.cart == undefined) {
+    }).then(function (re) {
+            // if cart session undefined create new session
+            if (req.session.cart == undefined) {
                 req.session.cart = {
                     items: [{
                         title: re[0].title,
@@ -385,46 +345,46 @@ app.get('/cart/add/:id',function(req,res) {
                         inventory_count: re[0].inventory_count,
                         quantity: 1
                     }],
-                    inventory_available:true,
-                    total_price:re[0].price
+                    inventory_available: true,
+                    total_price: re[0].price
                 }
             }
             else {
-            /*
-            Check if product exist in the cart
-            If Product exist in the cart update the quantity
-            If Product doesnot exist in create add the product
-            to cart with quantity of 1
-             */
+                /*
+                Check if product exist in the cart
+                If Product exist in the cart update the quantity
+                If Product doesnot exist in create add the product
+                to cart with quantity of 1
+                 */
 
 
                 var cart_total_price = req.session.cart.total_price;
-                var check=true;
+                var check = true;
                 var get_index_of_item;
                 var check_cart_item = req.session.cart.items;
-                check_cart_item.forEach(function(item , i) {
-                    if(item.title == re[0].title) {
+                check_cart_item.forEach(function (item, i) {
+                    if (item.title == re[0].title) {
                         check = false;
                         get_index_of_item = i;
                     }
                 })
 
 
-                if(check) {
+                if (check) {
                     var update_price = cart_total_price + re[0].price;
                     var create_new_cart_item = {
-                        title:re[0].title,
-                        price:re[0].price,
-                        inventory_count:re[0].inventory_count,
-                        quantity:1
+                        title: re[0].title,
+                        price: re[0].price,
+                        inventory_count: re[0].inventory_count,
+                        quantity: 1
                     }
-                    req.session.cart.total_price=update_price;
+                    req.session.cart.total_price = update_price;
                     req.session.cart.items.push(create_new_cart_item);
                 }
                 else {
                     var update_price = cart_total_price + re[0].price;
-                    update_price = Math.round(update_price*100)/100;
-                    req.session.cart.items[get_index_of_item].quantity+=1;
+                    update_price = Math.round(update_price * 100) / 100;
+                    req.session.cart.items[get_index_of_item].quantity += 1;
                     req.session.cart.total_price = update_price;
 
 
@@ -432,10 +392,10 @@ app.get('/cart/add/:id',function(req,res) {
             }
 
 
-            res.redirect(303,'/cart');
+            res.redirect(303, '/cart');
 
 
-}
+        }
     )
 
 })
@@ -448,51 +408,48 @@ app.get('/cart/add/:id',function(req,res) {
  */
 
 
-app.get('/checkout' , function(req,res) {
+app.get('/checkout', function (req, res) {
     // if cart is empty ask the user to add products
-    if(req.session.cart == null) {
+    if (req.session.cart == null) {
         res.render('emptycart');
     }
-    else if(req.session.cart.inventory_available)
-    {
-    var cart_items_checkout = req.session.cart;
-    var checkout_items = Object.assign({},cart_items_checkout);
-           checkout_items.items.forEach(function(d) {
-               product.find({title: d.title}, function (err, re) {
-                   // update the inventory of the product
-                   product.update({title: d.title}, {$set: {inventory_count: re[0].inventory_count - d.quantity}}, function (err, checking) {
-                   })
-               })
-    })
+    else if (req.session.cart.inventory_available) {
+        var cart_items_checkout = req.session.cart;
+        var checkout_items = Object.assign({}, cart_items_checkout);
+        checkout_items.items.forEach(function (d) {
+            product.find({title: d.title}, function (err, re) {
+                // update the inventory of the product
+                product.update({title: d.title}, {$set: {inventory_count: re[0].inventory_count - d.quantity}}, function (err, checking) {
+                })
+            })
+        })
         // set the session to null after getting checkout information
         req.session.cart = null;
-        res.render('checkout' , {checkoutitem:checkout_items.items,total_price:checkout_items.total_price});
+        res.render('checkout', {checkoutitem: checkout_items.items, total_price: checkout_items.total_price});
     }
-    else
-        {
-          res.render('inventoryerror');
-        }
-    })
+    else {
+        res.render('inventoryerror');
+    }
+})
 
-app.get('/' , function(req,res) {
+app.get('/', function (req, res) {
 
-        res.redirect(303,'/createsampleproducts');
+    res.redirect(303, '/createsampleproducts');
 
 })
 
 
-
-app.use(function(req,res){
+app.use(function (req, res) {
     res.status(404);
     res.render('404');
 })
 
-app.use(function(err,req,res,next){
+app.use(function (err, req, res, next) {
     console.log(err.stack);
     res.status(500);
     res.render('500');
 })
 
-app.listen(app.get('port'), function(){
+app.listen(app.get('port'), function () {
     console.log('Express started on http://localhost:' + app.get('port') + '; press Ctrl-C to terminate');
 });
